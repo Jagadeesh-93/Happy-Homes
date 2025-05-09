@@ -15,7 +15,7 @@ app.use(express.json());
 // Enable CORS
 const allowedOrigins = [
   "http://localhost:3000", // For local development
-  "https://happy-homes-frontend.onrender.com", // Your actual frontend Render URL
+  "https://frontend-5s0f.onrender.com", // Updated frontend Render URL
 ];
 const corsOptions = {
   origin: (origin, callback) => {
@@ -116,6 +116,37 @@ app.post("/api/register", async (req, res) => {
   } catch (error) {
     console.error("❌ Error registering user:", error);
     return res.status(500).json({ message: "Server error while registering user" });
+  }
+});
+
+// Endpoint to login a user
+app.post("/api/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  // Validate input
+  if (!username || !password) {
+    return res.status(400).json({ message: "Username and password are required" });
+  }
+
+  try {
+    // Find the user by username
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    // Compare the provided password with the hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    // For simplicity, return a success message
+    // In a real app, you’d generate a JWT token here and return it
+    return res.status(200).json({ message: "Login successful", user: { username: user.username, email: user.email } });
+  } catch (error) {
+    console.error("❌ Error logging in user:", error);
+    return res.status(500).json({ message: "Server error while logging in" });
   }
 });
 
