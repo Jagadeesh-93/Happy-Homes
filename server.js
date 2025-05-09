@@ -9,10 +9,20 @@ const propertyRoutes = require("./routes/propertyRoutes");
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname,"../client/build")));
+
 // Enable CORS
+const allowedOrigins = [
+  "http://localhost:3000", // For local development
+  "https://happy-homes-frontend.onrender.com", // Replace with your actual frontend Render URL
+];
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 };
@@ -27,19 +37,21 @@ app.use("/uploads", express.static(uploadsDir));
 console.log("📂 Serving images from:", uploadsDir);
 
 // MongoDB Connection
-const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/happyhome";
+const mongoURI = process.env.MONGO_URI;
+if (!mongoURI) {
+  throw new Error("MONGO_URI is not defined in environment variables");
+}
 mongoose
   .connect(mongoURI, { serverSelectionTimeoutMS: 5000 })
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err.message));
 
-// Use Routes
+// API Routes
+app.get("/api/health", (req, res) => {
+  res.json({ status: "Backend is running" });
+});
 app.use("/api", userRoutes);
 app.use("/api/properties", propertyRoutes);
-
-app.get("/*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build/index.html"));
-});
 
 // Start Server
 const PORT = process.env.PORT || 5000;
