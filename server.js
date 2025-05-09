@@ -12,23 +12,15 @@ const User = require("./models/User");
 const app = express();
 app.use(express.json());
 
-// Enable CORS
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://frontend-5s0f.onrender.com",
-];
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+// Enable CORS with simplified configuration
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "https://frontend-5s0f.onrender.com",
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
-};
-app.use(cors(corsOptions));
+}));
 
 // Serve Uploaded Images
 const uploadsDir = path.join(__dirname, "uploads");
@@ -116,7 +108,6 @@ app.post("/api/login", async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
-    // Return a placeholder token (in a real app, use JWT)
     const token = "logged-in-placeholder-token";
     return res.status(200).json({
       message: "Login successful",
