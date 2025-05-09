@@ -6,6 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const userRoutes = require("./routes/userRoutes");
 const propertyRoutes = require("./routes/propertyRoutes");
+const User = require("./models/User"); // Import the User model
 
 const app = express();
 app.use(express.json());
@@ -13,7 +14,7 @@ app.use(express.json());
 // Enable CORS
 const allowedOrigins = [
   "http://localhost:3000", // For local development
-  "https://happy-homes-frontend.onrender.com", // Replace with your actual frontend Render URL
+  "https://happy-homes-frontend.onrender.com", // Your actual frontend Render URL
 ];
 const corsOptions = {
   origin: (origin, callback) => {
@@ -50,6 +51,29 @@ mongoose
 app.get("/api/health", (req, res) => {
   res.json({ status: "Backend is running" });
 });
+
+// Endpoint to check username availability
+app.post("/api/users/check-username", async (req, res) => {
+  const { username } = req.body;
+
+  // Validate input
+  if (!username) {
+    return res.status(400).json({ message: "Username is required" });
+  }
+
+  try {
+    // Check if username already exists in the database
+    const user = await User.findOne({ username });
+    if (user) {
+      return res.status(200).json({ exists: true });
+    }
+    return res.status(200).json({ exists: false });
+  } catch (error) {
+    console.error("❌ Error checking username:", error);
+    return res.status(500).json({ message: "Server error while checking username" });
+  }
+});
+
 app.use("/api", userRoutes);
 app.use("/api/properties", propertyRoutes);
 
