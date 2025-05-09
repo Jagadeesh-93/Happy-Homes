@@ -4,18 +4,18 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
-const bcrypt = require("bcrypt"); // Import bcrypt for password hashing
+const bcrypt = require("bcrypt");
 const userRoutes = require("./routes/userRoutes");
 const propertyRoutes = require("./routes/propertyRoutes");
-const User = require("./models/User"); // Import the User model
+const User = require("./models/User");
 
 const app = express();
 app.use(express.json());
 
 // Enable CORS
 const allowedOrigins = [
-  "http://localhost:3000", // For local development
-  "https://frontend-5s0f.onrender.com", // Updated frontend Render URL
+  "http://localhost:3000",
+  "https://frontend-5s0f.onrender.com",
 ];
 const corsOptions = {
   origin: (origin, callback) => {
@@ -53,17 +53,12 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "Backend is running" });
 });
 
-// Endpoint to check username availability
 app.post("/api/users/check-username", async (req, res) => {
   const { username } = req.body;
-
-  // Validate input
   if (!username) {
     return res.status(400).json({ message: "Username is required" });
   }
-
   try {
-    // Check if username already exists in the database
     const user = await User.findOne({ username });
     if (user) {
       return res.status(200).json({ exists: true });
@@ -75,17 +70,12 @@ app.post("/api/users/check-username", async (req, res) => {
   }
 });
 
-// Endpoint to register a new user
 app.post("/api/register", async (req, res) => {
   const { firstName, lastName, username, email, password } = req.body;
-
-  // Validate input
   if (!firstName || !lastName || !username || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
   }
-
   try {
-    // Check if username or email already exists
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
       if (existingUser.username === username) {
@@ -95,12 +85,8 @@ app.post("/api/register", async (req, res) => {
         return res.status(400).json({ message: "Email already registered" });
       }
     }
-
-    // Hash the password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create new user
     const newUser = new User({
       firstName,
       lastName,
@@ -108,10 +94,7 @@ app.post("/api/register", async (req, res) => {
       email,
       password: hashedPassword,
     });
-
-    // Save user to database
     await newUser.save();
-
     return res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     console.error("❌ Error registering user:", error);
@@ -119,31 +102,27 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// Endpoint to login a user
 app.post("/api/login", async (req, res) => {
   const { username, password } = req.body;
-
-  // Validate input
   if (!username || !password) {
     return res.status(400).json({ message: "Username and password are required" });
   }
-
   try {
-    // Find the user by username
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
-
-    // Compare the provided password with the hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
-
-    // For simplicity, return a success message
-    // In a real app, you’d generate a JWT token here and return it
-    return res.status(200).json({ message: "Login successful", user: { username: user.username, email: user.email } });
+    // Return a placeholder token (in a real app, use JWT)
+    const token = "logged-in-placeholder-token";
+    return res.status(200).json({
+      message: "Login successful",
+      token,
+      user: { username: user.username, email: user.email },
+    });
   } catch (error) {
     console.error("❌ Error logging in user:", error);
     return res.status(500).json({ message: "Server error while logging in" });
