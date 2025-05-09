@@ -12,7 +12,7 @@ const User = require("./models/User");
 const app = express();
 app.use(express.json());
 
-// Enable CORS with simplified configuration
+// Enable CORS
 app.use(cors({
   origin: [
     "http://localhost:3000",
@@ -117,6 +117,38 @@ app.post("/api/login", async (req, res) => {
   } catch (error) {
     console.error("❌ Error logging in user:", error);
     return res.status(500).json({ message: "Server error while logging in" });
+  }
+});
+
+// Endpoint to get user profile
+app.get("/api/user/profile", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token || token !== "logged-in-placeholder-token") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Since we're using a placeholder token, we need the username from the request
+    // In a real app, you'd decode the JWT to get the user ID or username
+    const { username } = req.query; // Pass username as a query parameter
+    if (!username) {
+      return res.status(400).json({ message: "Username is required" });
+    }
+
+    const dbUser = await User.findOne({ username });
+    if (!dbUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      username: dbUser.username,
+      email: dbUser.email,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching user profile:", error);
+    return res.status(500).json({ message: "Server error while fetching profile" });
   }
 });
 
