@@ -2,9 +2,27 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
+const jwt = require("jsonwebtoken");
 const Property = require("../models/Property");
 
 const router = express.Router();
+
+// Middleware to authenticate JWT token
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Unauthorized: No token provided" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret", (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: "Invalid token: " + err.message });
+    }
+    req.user = user;
+    next();
+  });
+};
 
 // Multer Storage Configuration
 const storage = multer.diskStorage({
@@ -22,7 +40,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Fetch Properties API (Supports Home & Hostel Filters)
-router.get("/", async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     let { location, type } = req.query;
     let query = {};
@@ -49,7 +67,7 @@ router.get("/", async (req, res) => {
 });
 
 // Upload Property API (Supports Home & Hostel Fields)
-router.post("/add", upload.array("images", 5), async (req, res) => {
+router.post("/add", authenticateToken, upload.array("images", 5), async (req, res) => {
   try {
     let {
       title,
@@ -80,6 +98,7 @@ router.post("/add", upload.array("images", 5), async (req, res) => {
       type,
       owner: { name: ownerName, contact: ownerContact },
       images: imagePaths,
+      createdBy: req.user.id,
     };
 
     if (type === "home") {
@@ -102,12 +121,12 @@ router.post("/add", upload.array("images", 5), async (req, res) => {
     res.json({ success: true, message: "Property uploaded successfully!", property });
   } catch (error) {
     console.error("Error saving property:", error);
-    res.status(500).json({ success: false, message: "Error saving property data" });
+    res.status(500).json({ success: false, message: "Error saving property data: " + error.message });
   }
 });
 
 // Delete Property API (Deletes Images Too)
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authenticateToken, async (req, res) => {
   try {
     const property = await Property.findById(req.params.id);
 
@@ -131,7 +150,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Get All Properties
-router.get("/properties", async (req, res) => {
+router.get("/properties", authenticateToken, async (req, res) => {
   try {
     const properties = await Property.find();
     res.json(properties);

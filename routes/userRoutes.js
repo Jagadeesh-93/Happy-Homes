@@ -12,20 +12,20 @@ require("dotenv").config();
 // Middleware to authenticate JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  console.log("Auth Header:", authHeader); // Debug: Log the Authorization header
+  console.log("Auth Header:", authHeader);
   const token = authHeader && authHeader.split(" ")[1];
   if (!token) {
-    console.log("No token provided"); // Debug
+    console.log("No token provided");
     return res.status(401).json({ message: "Unauthorized: No token provided" });
   }
 
   jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret", (err, user) => {
     if (err) {
-      console.log("Token verification error:", err.message); // Debug
+      console.log("Token verification error:", err.message);
       return res.status(403).json({ message: "Invalid token: " + err.message });
     }
     req.user = user;
-    console.log("Token verified, user:", user); // Debug
+    console.log("Token verified, user:", user);
     next();
   });
 };
@@ -137,12 +137,12 @@ router.post("/auth/forgot-password", async (req, res) => {
 
     // Generate reset token
     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "your_jwt_secret", {
-      expiresIn: "15m", // Token expires in 15 minutes
+      expiresIn: "15m",
     });
 
     // Save token and expiration to user
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes in milliseconds
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
     await user.save();
 
     // Configure email transport
@@ -155,7 +155,7 @@ router.post("/auth/forgot-password", async (req, res) => {
     });
 
     // Construct reset link
-    const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
+    const resetLink = `https://frontend-5s0f.onrender.com/forgot-password?token=${resetToken}`;
 
     // Email options
     const mailOptions = {
