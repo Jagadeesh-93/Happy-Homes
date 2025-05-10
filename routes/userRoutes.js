@@ -145,6 +145,12 @@ router.post("/auth/forgot-password", async (req, res) => {
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
     await user.save();
 
+    // Log the saved user to verify token and expiration
+    console.log("User after saving reset token:", {
+      resetPasswordToken: user.resetPasswordToken,
+      resetPasswordExpires: user.resetPasswordExpires,
+    });
+
     // Configure email transport
     const transporter = nodemailer.createTransport({
       service: "Gmail",
@@ -198,6 +204,9 @@ router.post("/auth/reset-password", async (req, res) => {
       return res.status(400).json({ message: "Token and new password are required" });
     }
 
+    // Log incoming request data
+    console.log("Reset Password Request:", { token, newPassword });
+
     // Validate token
     let decoded;
     try {
@@ -218,6 +227,8 @@ router.post("/auth/reset-password", async (req, res) => {
       console.log("❌ No user found with token or token expired");
       return res.status(400).json({ message: "Invalid or expired token" });
     }
+
+    console.log("✅ User found for reset:", user.email);
 
     // Validate new password
     const passwordRegex =
