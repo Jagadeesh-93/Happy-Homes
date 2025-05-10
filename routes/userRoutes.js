@@ -156,6 +156,7 @@ router.post("/auth/forgot-password", async (req, res) => {
 
     // Construct reset link
     const resetLink = `https://frontend-5s0f.onrender.com/forgot-password?token=${resetToken}`;
+    console.log("Generated reset link:", resetLink); // Debug log
 
     // Email options
     const mailOptions = {
@@ -173,8 +174,14 @@ router.post("/auth/forgot-password", async (req, res) => {
       `,
     };
 
-    // Send email
-    await transporter.sendMail(mailOptions);
+    // Send email and log the result
+    await transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("❌ Email Send Error:", error);
+        return res.status(500).json({ message: "Error sending reset email: " + error.message });
+      }
+      console.log("✅ Email sent:", info.response);
+    });
 
     res.json({ message: "Password reset link sent to your email" });
   } catch (error) {
@@ -195,7 +202,9 @@ router.post("/auth/reset-password", async (req, res) => {
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret");
+      console.log("✅ Decoded token:", decoded);
     } catch (err) {
+      console.log("❌ Token validation error:", err.message);
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
@@ -206,6 +215,7 @@ router.post("/auth/reset-password", async (req, res) => {
     });
 
     if (!user) {
+      console.log("❌ No user found with token or token expired");
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
